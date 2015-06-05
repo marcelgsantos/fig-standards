@@ -29,52 +29,53 @@ No PHP, as mensagens HTTP são utilizadas em dois contextos:
 Esta proposta apresenta uma API para descrever completamente todas as partes das
 diferentes mensagens HTTP dentro do PHP.
 
-## 2. HTTP Messages in PHP
+## 2. Mensagens HTTP no PHP
 
-PHP does not have built-in support for HTTP messages.
+O PHP não possui suporte nativo para mensagens HTTP.
 
-### Client-side HTTP support
+### Suporte HTTP no lado do cliente
 
-PHP supports sending HTTP requests via several mechanisms:
+O PHP suporta o envio de requisições HTTP através de vários mecanismos:
 
-- [PHP streams](http://php.net/streams)
-- The [cURL extension](http://php.net/curl)
-- [ext/http](http://php.net/http) (v2 also attempts to address server-side support)
+- [Streams PHP](http://php.net/streams)
+- A [extensão cURL](http://php.net/curl)
+- [ext/http](http://php.net/http) (v2 também tenta contemplar o suporte no lado do servidor)
 
-PHP streams are the most convenient and ubiquitous way to send HTTP requests,
-but pose a number of limitations with regards to properly configuring SSL
-support, and provide a cumbersome interface around setting things such as
-headers. cURL provides a complete and expanded feature-set, but, as it is not a
-default extension, is often not present. The http extension suffers from the
-same problem as cURL, as well as the fact that it has traditionally had far
-fewer examples of usage.
+Streams PHP são a maneira mais conveniente e onipresente de enviar requisições HTTP,
+mas representam uma série de limitações com relação ao suporte apropriado de
+configurações SSL e fornece uma interface confusa sobre configurar coisas como
+cabecalhos. O cURL disponibiliza um conjunto completo e expandido de funcionalidades,
+mas, uma vez que não é uma extensão padrão, muitas vezes não está presente. A
+extensão http sofre do mesmo problema que cURL, bem como o fato de que ela tem
+tradicionalmente muito menos exemplos de uso.
 
-Most modern HTTP client libraries tend to abstract the implementation, to
-ensure they can work on whatever environment they are executed on, and across
-any of the above layers.
+A maioria das bibliotecas de clientes HTTP tendem a abstrair a implementação para
+garantir que elas possam trabalhar em quaisquer ambientes que sejam executadas e
+através de quaisquer camadas acima.
 
-### Server-side HTTP Support
+### Suporte HTTP no lado do servidor
 
-PHP uses Server APIs (SAPI) to interpret incoming HTTP requests, marshal input,
-and pass off handling to scripts. The original SAPI design mirrored [Common
-Gateway Interface](http://www.w3.org/CGI/), which would marshal request data
-and push it into environment variables before passing delegation to a script;
-the script would then pull from the environment variables in order to process
-the request and return a response.
+O PHP utiliza Server APIs (SAPI) para interpretar requisições HTTP recebidas,
+empacotar a entrada e passar a manipulação para scripts. O projeto original
+do SAPI é espelhado no [Common Gateway Interface](http://www.w3.org/CGI/), que
+empacotariam dados de requisição e os enviariam para variáveis de ambiente antes
+de delegar para um script; o script então extrairia as variáveis de ambiente
+a fim de processar a requisição e retornar a resposta.
 
-PHP's SAPI design abstracts common input sources such as cookies, query string
-arguments, and url-encoded POST content via superglobals (`$_COOKIE`, `$_GET`,
-and `$_POST`, respectively), providing a layer of convenience for web developers.
+O projeto do SAPI do PHP abstrai fontes comuns de entrada como cookies, argumentos
+de query string e conteúdo de requisições POST codificados como url através de
+superglobals (`$_COOKIE`, `$_GET` e `$_POST`, respectivamente) disponibilizando
+uma camada de conveniência para desenvolvedores web.
 
-On the response side of the equation, PHP was originally developed as a
-templating language, and allows intermixing HTML and PHP; any HTML portions of
-a file are immediately flushed to the output buffer. Modern applications and
-frameworks eschew this practice, as it can lead to issues with
-regards to emitting a status line and/or response headers; they tend to
-aggregate all headers and content, and emit them at once when all other
-application processing is complete. Special care needs to be paid to ensure
-that error reporting and other actions that send content to the output buffer
-do not flush the output buffer.
+No lado da resposta da equação, o PHP foi originalmente desenvolvido como uma
+linguagem de template e permite misturar HTML e PHP; quaisquer porções de HTML
+de um arquivo são imediatamente liberados para o buffer de saída. Aplicações
+modernas e frameworks evitam esta prática pois pode levar a problemas em
+relação ao envio da linha de status e/ou cabeçalhos de resposta; eles tendem
+a reunir todos os cabeçalhos e conteúdo e enviá-los de uma só vez quando todo
+o outro processamento da aplicação estiver completo. Deve se ter um cuidado
+especial para assegurar que notificações de erros e outras ações que enviam conteúdo
+para o buffer de saída não liberem o buffer de saída.
 
 ## 3. Why Bother?
 
