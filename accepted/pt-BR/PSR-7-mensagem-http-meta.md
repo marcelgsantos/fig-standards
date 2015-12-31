@@ -44,13 +44,13 @@ O PHP suporta o envio de requisições HTTP através de vários mecanismos:
 Streams PHP são a maneira mais conveniente e onipresente de enviar requisições HTTP,
 mas representam uma série de limitações com relação ao suporte apropriado de
 configurações SSL e fornece uma interface confusa sobre configurar coisas como
-cabecalhos. O cURL disponibiliza um conjunto completo e expandido de funcionalidades,
+cabeçalhos. O cURL disponibiliza um conjunto completo e expandido de funcionalidades,
 mas, uma vez que não é uma extensão padrão, muitas vezes não está presente. A
-extensão http sofre do mesmo problema que cURL, bem como o fato de que ela tem
+extensão http sofre do mesmo problema do cURL, bem como o fato de que ela tem
 tradicionalmente muito menos exemplos de uso.
 
 A maioria das bibliotecas de clientes HTTP tendem a abstrair a implementação para
-garantir que elas possam trabalhar em quaisquer ambientes que sejam executadas e
+garantir que elas possam funcionar em quaisquer ambientes que sejam executadas e
 através de quaisquer camadas acima.
 
 ### Suporte HTTP no lado do servidor
@@ -58,11 +58,11 @@ através de quaisquer camadas acima.
 O PHP utiliza Server APIs (SAPI) para interpretar requisições HTTP recebidas,
 empacotar a entrada e passar a manipulação para scripts. O projeto original
 do SAPI é espelhado no [Common Gateway Interface](http://www.w3.org/CGI/), que
-empacotariam dados de requisição e os enviariam para variáveis de ambiente antes
+empacotaria dados de requisição e os enviariam para variáveis de ambiente antes
 de delegar para um script; o script então extrairia as variáveis de ambiente
 a fim de processar a requisição e retornar a resposta.
 
-O projeto do SAPI do PHP abstrai fontes comuns de entrada como cookies, argumentos
+O projeto do SAPI do PHP abstrai fontes de entrada comuns como cookies, argumentos
 de query string e conteúdo de requisições POST codificados como url através de
 superglobals (`$_COOKIE`, `$_GET` e `$_POST`, respectivamente) disponibilizando
 uma camada de conveniência para desenvolvedores web.
@@ -77,91 +77,94 @@ o outro processamento da aplicação estiver completo. Deve se ter um cuidado
 especial para assegurar que notificações de erros e outras ações que enviam conteúdo
 para o buffer de saída não liberem o buffer de saída.
 
-## 3. Why Bother?
+## 3. Por que se preocupar?
 
-HTTP messages are used in a wide number of PHP projects -- both clients and
-servers. In each case, we observe one or more of the following patterns or
-situations:
+Mensagens HTTP são utilizadas em um grande número de projetos PHP - ambos clientes
+e servidores. Em cada caso, observamos um ou mais dos seguintes padrões ou
+situações:
 
-1. Projects use PHP's superglobals directly.
-2. Projects will create implementations from scratch.
-3. Projects may require a specific HTTP client/server library that provides
-   HTTP message implementations.
-4. Projects may create adapters for common HTTP message implementations.
+1. Projetos utilizam as superglobals do PHP diretamente.
+2. Projetos irão criar implementações a partir do zero.
+3. Projetos podem requerer uma biblioteca cliente/servidor HTTP específica
+   que disponibiliza implementações de mensagens HTTP.
+4. Projetos podem criar adaptadores para implementações comuns de mensagens HTTP.
 
-As examples:
+Como exemplos:
 
-1. Just about any application that began development before the rise of
-   frameworks, which includes a number of very popular CMS, forum, and shopping
-   cart systems, have historically used superglobals.
-2. Frameworks such as Symfony and Zend Framework each define HTTP components
-   that form the basis of their MVC layers; even small, single-purpose
-   libraries such as oauth2-server-php provide and require their own HTTP
-   request/response implementations. Guzzle, Buzz, and other HTTP client
-   implementations each create their own HTTP message implementations as well.
-3. Projects such as Silex, Stack, and Drupal 8 have hard dependencies on
-   Symfony's HTTP kernel. Any SDK built on Guzzle has a hard requirement on
-   Guzzle's HTTP message implementations.
-4. Projects such as Geocoder create redundant [adapters for common
-   libraries](https://github.com/geocoder-php/Geocoder/tree/6a729c6869f55ad55ae641c74ac9ce7731635e6e/src/Geocoder/HttpAdapter).
+1. Qualquer aplicação que iniciou o desenvolvimento antes do surgimento dos frameworks,
+   que inclui uma série de CMSs, fóruns, sistemas de carrinho de compras bastante populares
+   tem utilizado historicamente superglobals.
+2. Frameworks como Symfony e Zend Framework definem componentes HTTP que formam
+   a base de suas camadas MVC; mesmo pequenas bibliotecas e de propósito único como 
+   oauth2-server-php disponibiliza e requer suas próprias implementações de requisições/
+   respostas HTTP. Guzzle, Buzz e outras implementações de clientes HTTP criam 
+   suas próprias implementações de mensanges HTTP também.
+3. Projetos como Silex, Stack e Drupal 8 possuem fortes dependências do kernel
+   HTTP do Symfony. Qualquer SDK construído sobre o Guzzle possui uma forte 
+   dependência da implementação de mensagens HTTP do Guzzle.
+4. Projetos como o Geocoder criam [adaptadores redundantes para bibliotecas mais utilizadas](https://github.com/geocoder-php/Geocoder/tree/6a729c6869f55ad55ae641c74ac9ce7731635e6e/src/Geocoder/HttpAdapter).
 
-Direct usage of superglobals has a number of concerns. First, these are
-mutable, which makes it possible for libraries and code to alter the values,
-and thus alter state for the application. Additionally, superglobals make unit
-and integration testing difficult and brittle, leading to code quality
-degradation.
+A utilização direta de superglobals possui uma série de preocupações. Primeiramente,
+estas são mutáveis, o que torna possível para bibliotecas e códigos alterarem seus
+valores e, assim, alterar o estado da aplicação. Além disso, as superglobals
+tornam os testes unitários e de integração difíceis e frágeis levando a degradação
+da qualidade de código.
 
-In the current ecosystem of frameworks that implement HTTP message abstractions,
-the net result is that projects are not capable of interoperability or
-cross-pollination. In order to consume code targeting one framework from
-another, the first order of business is building a bridge layer between the
-HTTP message implementations. On the client-side, if a particular library does
-not have an adapter you can utilize, you need to bridge the request/response
-pairs if you wish to use an adapter from another library.
+No ecossistema atual de frameworks que implementam abstrações de mensagens HTTP,
+o resultado é que projetos não são capazes de interoperabilidade ou polinização
+cruzada. A fim de consumir um código visando um framework a partir de outro,
+a primeira ordem de negócio é construir uma camada que faça a ponte entre as
+implementações das mensagens HTTP. No lado do cliente, se uma biblioteca em
+particular não tiver um adaptador que você possa utilizar, você precisa fazer
+a ponte para a requisição/resposta se você deseja utilizar um adaptador a
+partir de outra biblioteca.
 
-Finally, when it comes to server-side responses, PHP gets in its own way: any
-content emitted before a call to `header()` will result in that call becoming a
-no-op; depending on error reporting settings, this can often mean headers
-and/or response status are not correctly sent. One way to work around this is
-to use PHP's output buffering features, but nesting of output buffers can
-become problematic and difficult to debug. Frameworks and applications thus
-tend to create response abstractions for aggregating headers and content that
-can be emitted at once - and these abstractions are often incompatible.
+Finalmente, quando se trata de respostas do lado do servidor, o PHP tem a sua
+própria maneira: qualquer conteúdo enviado antes de uma chamada a `header()`
+resultará que a chamada se tornará nula; dependendo das configurações de
+notificações de erro, muitas vezes isso pode significar que cabeçalhos e/ou
+status de resposta não estão sendo enviados corretamente. Uma maneira de
+contornar este problema é utilizar as funcionalidades de buffer de saída do
+PHP, porém o aninhamento de buffers de saída pode se tornar problemático e
+difícil depurar. Frameworks e aplicações, assim, tendem a criar abstrações
+de resposta para a agregação de cabeçalhos e conteúdo que podem ser emitidos
+de uma só vez - e essas abstrações são muitas vezes incompatíveis.
 
-Thus, the goal of this proposal is to abstract both client- and server-side
-request and response interfaces in order to promote interoperability between
-projects. If projects implement these interfaces, a reasonable level of
-compatibility may be assumed when adopting code from different libraries.
+Assim, o objetivo desta proposta é abstrair tanto as interfaces de requisição
+e resposta do lado do cliente quanto do lado do servidor a fim de promover a
+interoperabilidade entre projetos. Se um projeto implementa estas interfaces,
+um nível razoável de compatibilidade pode ser assumido ao adotar código de
+diferentes bibliotecas.
 
-It should be noted that the goal of this proposal is not to obsolete the
-current interfaces utilized by existing PHP libraries. This proposal is aimed
-at interoperability between PHP packages for the purpose of describing HTTP
-messages.
+Nota-se que o objetivo desta proposta não é tornar obsoletas as interfaces
+atuais utilizadas por bibliotecas PHP existentes. Esta proposta é destinada a
+interoperabilidade entre pacotes PHP com a finalidade de descrever mensagens
+HTTP.
 
-## 4. Scope
+## 4. Escopo
 
-### 4.1 Goals
+### 4.1 Metas
 
-* Provide the interfaces needed for describing HTTP messages.
-* Focus on practical applications and usability.
-* Define the interfaces to model all elements of the HTTP message and URI
-  specifications.
-* Ensure that the API does not impose arbitrary limits on HTTP messages. For
-  example, some HTTP message bodies can be too large to store in memory, so we
-  must account for this.
-* Provide useful abstractions both for handling incoming requests for
-  server-side applications and for sending outgoing requests in HTTP clients.
+* Fornecer interfaces necessárias para descrever mensagens HTTP.
+* Foco em aplicações práticas e usabilidade.
+* Definir interfaces para modelar todos os elementos da mensagem HTTP e 
+  especificação da URI.
+* Garantir que a API não imponha limites arbitrários sobre mensagens HTTP. Por
+  exemplo, alguns corpos de mensagem HTTP podem ser muito grandes para o armazenamento
+  em memória, logo devemos levar isso em consideração.
+* Fornecer abstrações úteis tanto para lidar com requisições de entrada para
+  aplicações do lado do servidor quanto para enviar requisições de saída em clientes HTTP.
 
-### 4.2 Non-Goals
+### 4.2 Não-Metas
 
-* This proposal does not expect all HTTP client libraries or server-side
-  frameworks to change their interfaces to conform. It is strictly meant for
-  interoperability.
-* While everyone's perception of what is and is not an implementation detail
-  varies, this proposal should not impose implementation details. As
-  RFCs 7230, 7231, and 3986 do not force any particular implementation,
-  there will be a certain amount of invention needed to describe HTTP message
-  interfaces in PHP.
+* Esta proposta não espera que todas as bibliotecas de clientes HTTP ou
+  frameworks do lado do servidor mudem suas interfaces para estar em conformidade.
+  É estritamente projetado para interoperabilidade.
+* Embora a percepção de todos sobre o que é e o que não é um detalhe de
+  implementação varia, esta proposta não deve impor detalhes de implementação.
+  Como as RFCs 7230, 7231 e 3986 não forçam nenhuma implementação em particular,
+  haverá uma certa quantidade de invenção necessária para descrever interfaces
+  de mensagem HTTP em PHP.
 
 ## 5. Design Decisions
 
@@ -628,18 +631,18 @@ Examples of this practice already exist in libraries such as
 has functionality for casting the value to a string, these objects can be
 used to populate the headers of an HTTP message.
 
-## 6. People
+## 6. Pessoas
 
-### 6.1 Editor(s)
+### 6.1 Editor(es)
 
 * Matthew Weier O'Phinney
 
-### 6.2 Sponsors
+### 6.2 Patrocinadores
 
 * Paul M. Jones
-* Beau Simensen (coordinator)
+* Beau Simensen (coordenador)
 
-### 6.3 Contributors
+### 6.3 Contribuidores
 
 * Michael Dowling
 * Larry Garfield
